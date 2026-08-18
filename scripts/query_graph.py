@@ -9,7 +9,8 @@ Usage:
     python3 query_graph.py "which systems depend on the eval harness"   # search
     python3 query_graph.py --entity "context-layer" --hops 2            # traverse from an entity
     python3 query_graph.py --note "Architecture Overview.md" --hops 1   # traverse from a note
-    python3 query_graph.py --stats                            # what's in the graph
+    python3 query_graph.py --stats                                      # what's in the graph
+    python3 query_graph.py "eval harness" --json                        # machine-readable output
 """
 
 import argparse
@@ -76,7 +77,7 @@ def relations_for(graph: dict, names: set):
     return out
 
 
-def search(graph: dict, question: str, limit: int):
+def search(graph: dict, question: str, limit: int, as_json: bool = False):
     q = tokens(question)
     idx, records = entity_index(graph)
 
@@ -95,6 +96,45 @@ def search(graph: dict, question: str, limit: int):
         if score:
             scored.append((score, n))
     scored.sort(key=lambda x: -x[0])
+
+    if as_json:
+        out = {
+            "question": question,
+            "entities": [],
+            "relations": [],
+            "notes": []
+        }
+        for k, v in list(hits.items())[:20]:
+            out["entities"].append({
+                "name": v["name"],
+                "type": v["type"],
+                "notes": list(v["notes"])  # Cast set to list for JSON serialization
+            })
+        
+        rels = relations_for(graph, set(hits)) if hits else []
+        for r in rels[:40]:
+            out["relations"].append({
+                "source": r.get("source"),
+                "target": r.get("target"),
+                "type": r.get("type", "related"),
+                "note": r.get("note")
+            })
+            
+        for score, n in scored[:limit]:
+            note_data = {
+                "id": n["id"],
+                "score": score
+            }
+            # Populate additional helpful arrays matching the human readable behavior
+            if n.get("entities"):
+                note_data["entities"] = [e.get("name", "") for e in n["entities"][:8]]
+            if n.get("links_resolved"):
+                note_data["links"] = n["links_resolved"][:8]
+                
+            out["notes"].append(note_data)
+
+        print(json.dumps(out, indent=2))
+        return
 
     print(f"# question: {question}\n")
     if hits:
@@ -120,7 +160,7 @@ def search(graph: dict, question: str, limit: int):
         print("(nothing matched — the graph may not be extracted yet; see SKILL.md)")
 
 
-def traverse(graph: dict, seed_note: str, hops: int):
+def traverse(graph: dict, seed_note: str, hops: int, as_json: bool = False):
     notes = {n["id"]: n for n in graph["notes"]}
     match = seed_note if seed_note in notes else None
     if not match:
@@ -141,6 +181,27 @@ def traverse(graph: dict, seed_note: str, hops: int):
         frontier = nxt - seen
         seen |= frontier
 
+    if as_json:
+        out = {
+            "seed_note": seed_note,
+            "matched_note": match,
+            "hops": hops,
+            "notes": []
+        }
+        for nid in sorted(seen):
+            n = notes[nid]
+            note_data = {"id": nid}
+            if n.get("entities"):
+                note_data["entities"] = [e.get("name", "") for e in n["entities"][:10]]
+            if n.get("relations"):
+                note_data["relations"] = [
+                    {"source": r.get("source"), "target": r.get("target"), "type": r.get("type", "related")} 
+                    for r in n["relations"][:6]
+                ]
+            out["notes"].append(note_data)
+        print(json.dumps(out, indent=2))
+        return
+
     print(f"# subgraph from {match}, {hops} hop(s) — {len(seen)} notes\n")
     for nid in sorted(seen):
         n = notes[nid]
@@ -151,13 +212,28 @@ def traverse(graph: dict, seed_note: str, hops: int):
             print(f"    {r.get('source')} —[{r.get('type','related')}]→ {r.get('target')}")
 
 
-def stats(graph: dict):
+def stats(graph: dict, as_json: bool = False):
     notes = graph["notes"]
     ents = [e for n in notes for e in n.get("entities", [])]
     rels = [r for n in notes for r in n.get("relations", [])]
     by_type = defaultdict(int)
     for e in ents:
         by_type[e.get("type", "unknown")] += 1
+        
+    if as_json:
+        out = {
+            "root": graph.get('root'),
+            "built": graph.get('built'),
+            "notes_total": len(notes),
+            "notes_extracted": sum(1 for n in notes if n.get('extracted')),
+            "edges": sum(len(n.get('links_resolved', [])) for n in notes),
+            "entities_total": len(ents),
+            "entities_by_type": dict(by_type),
+            "relations_total": len(rels)
+        }
+        print(json.dumps(out, indent=2))
+        return
+
     print(f"root:      {graph['root']}")
     print(f"built:     {graph['built']}")
     print(f"notes:     {len(notes)}")
@@ -178,17 +254,18 @@ def main() -> int:
     ap.add_argument("--hops", type=int, default=1)
     ap.add_argument("--limit", type=int, default=8)
     ap.add_argument("--stats", action="store_true")
+    ap.add_argument("--json", action="store_true", help="output structured JSON instead of text")
     a = ap.parse_args()
 
     g = load(a.graph)
     if a.stats:
-        stats(g)
+        stats(g, as_json=a.json)
     elif a.note:
-        traverse(g, a.note, a.hops)
+        traverse(g, a.note, a.hops, as_json=a.json)
     elif a.entity:
-        search(g, a.entity, a.limit)
+        search(g, a.entity, a.limit, as_json=a.json)
     elif a.question:
-        search(g, a.question, a.limit)
+        search(g, a.question, a.limit, as_json=a.json)
     else:
         ap.print_help()
     return 0
