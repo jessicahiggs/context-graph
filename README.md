@@ -22,6 +22,14 @@ Your notes already contain that graph. It's just trapped in prose.
 
 No API key, no token, no scheduled job, no network access. **Works on macOS, Linux and Windows.**
 
+> **On Windows, run `python` (or `py`) wherever this README says `python3`.**
+> The commands below use `python3`, the name that ships on macOS and Linux. The
+> python.org Windows installer provides `python` and `py` instead. `python3`
+> normally still resolves — to a Microsoft Store stub that prints
+> `Python was not found; run without arguments to install from the Microsoft
+> Store...` and exits, which reads like a broken Python install rather than a
+> command-name mismatch.
+
 ## Install
 
 Download this repo and copy the `context-graph` folder into your Claude skills directory:
