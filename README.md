@@ -1,14 +1,14 @@
 # context-graph
 
-Turn a folder of markdown notes into a **knowledge graph** — people, companies, projects and the relationships between them — so Claude answers from your actual notes instead of guessing or grepping.
+Turn a folder of markdown notes into a **knowledge graph** — the systems, models, datasets, people and metrics you write about, and the relationships between them — so Claude answers from your actual notes instead of guessing or grepping.
 
 Created by [Jessica Higgs](https://github.com/jessicahiggs).
 
 ## The problem
 
-Search finds files containing the word "Stripe."
+Search finds files containing the word "evaluation."
 
-A graph answers *"who do I know that could introduce me to someone at Stripe"* — because it knows one note describes a person, that the person works at Stripe, when you last spoke, and which other contacts overlap.
+A graph answers *"which agents depend on the eval harness, and which of them still read from the old context format"* — because it knows one note describes a system, that the system is evaluated by another, what it reads context from, and when that dependency was last changed.
 
 Your notes already contain that graph. It's just trapped in prose.
 
@@ -58,21 +58,24 @@ awaiting model extraction: 76
 
 ```json
 "entities": [
-  {"name": "Ekow Essel", "type": "person"},
-  {"name": "Stripe", "type": "company"}
+  {"name": "coding-agent", "type": "system"},
+  {"name": "eval-harness", "type": "system"},
+  {"name": "context-layer", "type": "system"},
+  {"name": "hallucination-rate", "type": "metric"}
 ],
 "relations": [
-  {"source": "Ekow Essel", "target": "Stripe", "type": "works_at"},
-  {"source": "Jessica", "target": "Ekow Essel", "type": "spoke_with", "date": "2026-07-24"}
+  {"source": "coding-agent", "target": "eval-harness", "type": "evaluated_by"},
+  {"source": "coding-agent", "target": "context-layer", "type": "reads_context_from"},
+  {"source": "eval-harness", "target": "hallucination-rate", "type": "reports", "date": "2026-06-02"}
 ]
 ```
 
 Then queries run against the graph instead of your files:
 
 ```bash
-python3 scripts/query_graph.py "who do I know at Stripe"
-python3 scripts/query_graph.py --note "Job Search" --hops 1
-python3 scripts/query_graph.py --entity "Stripe" --hops 2
+python3 scripts/query_graph.py "which systems depend on the eval harness"
+python3 scripts/query_graph.py --note "Architecture Overview" --hops 1
+python3 scripts/query_graph.py --entity "context-layer" --hops 2
 python3 scripts/query_graph.py --stats
 ```
 
@@ -81,7 +84,7 @@ python3 scripts/query_graph.py --stats
 - **No guessing which file to open** — one lookup returns the relevant slice
 - **Less context burned** — only relevant facts are loaded, not whole documents
 - **It persists** — built once, updated incrementally, instead of every session rediscovering the same facts
-- **Cross-file questions get cheap** — "which of my contacts work at companies where I have something open" is a traversal, not a reading exercise
+- **Cross-file questions get cheap** — "which components read from the context layer and which metrics they report" is a traversal, not a reading exercise
 
 ## Incremental by design
 
@@ -90,8 +93,8 @@ Re-run the structural pass whenever notes change. Files are hashed, so unchanged
 ## Design notes
 
 - **A wrong edge is worse than a missing one.** The skill instructs the model to extract only what a note actually states — mentioning two names in a sentence is not a relationship. Invented edges get retrieved later and believed.
-- **Name normalisation matters more than it sounds.** "JP Morgan", "JPMorgan Chase" and "JPM" must collapse to one entity or traversal silently breaks.
-- **Decide the entity types before extracting.** A job search needs people, companies, roles, referrals. Research needs papers, authors, concepts. Generic extraction produces a graph that answers nothing well.
+- **Name normalisation matters more than it sounds.** "eval-harness", "the eval service" and "EvalHarness" must collapse to one entity or traversal silently breaks.
+- **Decide the entity types before extracting.** An AI platform needs systems, models, datasets, metrics and owners. Research needs papers, authors and concepts. Generic extraction produces a graph that answers nothing well.
 - **Wikilinks are free edges.** Obsidian vaults start with half the graph already drawn, which is why the structural pass runs first.
 
 ## Limitations
