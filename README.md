@@ -38,6 +38,20 @@ Then say:
 
 > build a knowledge graph from my notes in ~/Documents/vault
 
+## Try it first
+
+A small sample vault ships with the repo, so you can see real output before pointing
+this at your own notes:
+
+```bash
+python3 scripts/build_graph.py examples/sample-vault --out sample.json
+python3 scripts/query_graph.py --graph sample.json --note "Architecture Overview" --hops 1
+```
+
+Six notes describing a fictional AI platform, wikilinked to each other. Enough to see
+what the structural pass produces and how traversal works, without reading anything
+of yours.
+
 ## How it works
 
 Two passes, kept separate on purpose:
