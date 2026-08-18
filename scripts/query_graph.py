@@ -6,9 +6,9 @@ Returns a compact subgraph rather than whole notes, so only the facts that matte
 enter the model's context.
 
 Usage:
-    python3 query_graph.py "who do I know at Stripe"          # search
-    python3 query_graph.py --entity "Stripe" --hops 2         # traverse from an entity
-    python3 query_graph.py --note "Job Search.md" --hops 1    # traverse from a note
+    python3 query_graph.py "which systems depend on the eval harness"   # search
+    python3 query_graph.py --entity "context-layer" --hops 2            # traverse from an entity
+    python3 query_graph.py --note "Architecture Overview.md" --hops 1   # traverse from a note
     python3 query_graph.py --stats                            # what's in the graph
 """
 
