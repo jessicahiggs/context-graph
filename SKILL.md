@@ -31,7 +31,7 @@ No API key, no token, no scheduled job, no network access. Works on macOS, Linux
 Two questions, no more:
 
 1. **Where are the notes?** A path. Confirm it exists before running anything.
-2. **What do they actually want to ask it?** This is the important one — it decides which entity types are worth extracting. Someone tracking a job search wants people, companies, roles and referrals. Someone doing research wants papers, authors and concepts. **Do not extract generic "entities"; extract the kinds they will ask about.**
+2. **What do they actually want to ask it?** This is the important one — it decides which entity types are worth extracting. Someone documenting an AI platform wants systems, models, datasets, metrics and owners. Someone doing research wants papers, authors and concepts. **Do not extract generic "entities"; extract the kinds they will ask about.**
 
 Agree a small type list, 4–6 at most. More types make the graph noisier, not richer.
 
@@ -49,22 +49,23 @@ Read `graph.json`. For each note where `"extracted": false`, open the file at `r
 
 ```json
 "entities": [
-  {"name": "Ekow Essel", "type": "person"},
-  {"name": "Stripe", "type": "company"}
+  {"name": "coding-agent", "type": "system"},
+  {"name": "eval-harness", "type": "system"},
+  {"name": "hallucination-rate", "type": "metric"}
 ],
 "relations": [
-  {"source": "Ekow Essel", "target": "Stripe", "type": "works_at"},
-  {"source": "Jessica", "target": "Ekow Essel", "type": "spoke_with", "date": "2026-07-24"}
+  {"source": "coding-agent", "target": "eval-harness", "type": "evaluated_by"},
+  {"source": "eval-harness", "target": "hallucination-rate", "type": "reports", "date": "2026-06-02"}
 ],
 "extracted": true
 ```
 
 Rules that keep the graph trustworthy:
 
-- **Extract only what the note states.** If a note says someone is "a Stripe insider," that is `works_at`. If it merely mentions two names in one sentence, that is not a relationship. **Never infer a relationship to make the graph look richer** — a wrong edge is worse than a missing one, because it will be retrieved and believed later.
-- **Normalise names.** "JP Morgan", "JPMorgan Chase" and "JPM" must become one entity, or traversal breaks. Keep the fullest form as `name`.
+- **Extract only what the note states.** If a note says a service "runs against the eval harness nightly," that is `evaluated_by`. If it merely mentions two systems in one sentence, that is not a relationship. **Never infer a relationship to make the graph look richer** — a wrong edge is worse than a missing one, because it will be retrieved and believed later.
+- **Normalise names.** "eval-harness", "the eval service" and "EvalHarness" must become one entity, or traversal breaks. Keep the fullest form as `name`.
 - **Reuse types from the agreed list.** A type used once is noise.
-- **Dates in relations are valuable** — they let the user ask "who have I not spoken to since June."
+- **Dates in relations are valuable** — they let the user ask "what changed since the June migration."
 - **Batch the work.** Read many notes, then write `graph.json` once. Do not rewrite the file per note.
 - **Say what it cost.** Tell the user how many notes you extracted and roughly how long a full rebuild takes, so a large vault is not a surprise.
 
@@ -73,9 +74,9 @@ Set `"extracted": true` only for notes you genuinely processed.
 ## Step 4 — Answer from the graph
 
 ```bash
-python3 scripts/query_graph.py "who do I know at Stripe"      # search
-python3 scripts/query_graph.py --note "Job Search" --hops 1   # subgraph around a note
-python3 scripts/query_graph.py --entity "Stripe" --hops 2     # traverse from an entity
+python3 scripts/query_graph.py "which systems depend on the eval harness"   # search
+python3 scripts/query_graph.py --note "Architecture Overview" --hops 1     # subgraph around a note
+python3 scripts/query_graph.py --entity "context-layer" --hops 2          # traverse from an entity
 python3 scripts/query_graph.py --stats                        # coverage
 ```
 
