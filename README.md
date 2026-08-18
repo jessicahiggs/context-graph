@@ -22,6 +22,10 @@ Your notes already contain that graph. It's just trapped in prose.
 
 No API key, no token, no scheduled job, no network access. **Works on macOS, Linux and Windows.**
 
+> [!Note]
+> You may need to use `python` at start of command instead of `python3` depending on how your Windows system is configured.
+>
+
 ## Install
 
 Download this repo and copy the `context-graph` folder into your Claude skills directory:
