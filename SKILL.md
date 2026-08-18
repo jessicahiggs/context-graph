@@ -74,11 +74,17 @@ Set `"extracted": true` only for notes you genuinely processed.
 ## Step 4 — Answer from the graph
 
 ```bash
-python3 scripts/query_graph.py "which systems depend on the eval harness"   # search
-python3 scripts/query_graph.py --note "Architecture Overview" --hops 1     # subgraph around a note
-python3 scripts/query_graph.py --entity "context-layer" --hops 2          # traverse from an entity
-python3 scripts/query_graph.py --stats                        # coverage
+python3 scripts/query_graph.py "which systems depend on the eval harness" --json
+python3 scripts/query_graph.py --note "Architecture Overview" --hops 1 --json
+python3 scripts/query_graph.py --entity "context-layer" --hops 2 --json
+python3 scripts/query_graph.py --stats --json
 ```
+
+**Always pass `--json`.** The default output is formatted for a human to read, and
+parsing it back out of prose breaks the moment the formatting changes. With `--json`
+you get labelled fields — `entities`, `relations`, `notes`, each with scores and note
+ids — so nothing has to be inferred from layout. Drop the flag only when showing
+output to the user directly.
 
 **Query the graph first, open files second.** The point is to avoid reading whole notes. Use the returned subgraph to answer; open a file only when the graph shows a note is relevant but lacks the detail needed.
 
