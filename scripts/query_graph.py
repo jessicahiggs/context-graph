@@ -33,7 +33,19 @@ def load(path: str) -> dict:
 
 
 def tokens(s: str) -> set:
-    return {w for w in re.findall(r"[a-z0-9][a-z0-9'-]+", s.lower()) if w not in STOP and len(w) > 2}
+    """Tokens from a string, keeping both the whole hyphenated form and its parts.
+
+    "eval-harness" yields {"eval-harness", "eval", "harness"} so that a question
+    phrased as "the eval harness" still matches an entity named "eval-harness".
+    """
+    out = set()
+    for w in re.findall(r"[a-z0-9][a-z0-9'_-]+", s.lower()):
+        if len(w) > 2 and w not in STOP:
+            out.add(w)
+        for part in re.split(r"[-_]", w):
+            if len(part) > 2 and part not in STOP:
+                out.add(part)
+    return out
 
 
 def entity_index(graph: dict):
