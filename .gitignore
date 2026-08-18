@@ -1,0 +1,5 @@
+# Your graph contains the structure and entities of your own notes — keep it local.
+graph.json
+*.graph.json
+__pycache__/
+.DS_Store
